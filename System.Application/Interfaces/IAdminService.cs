@@ -7,33 +7,37 @@ namespace System.Application.Interfaces
     {
         Task<IEnumerable<Store>> GetAllStoresAsync();
         Task<IEnumerable<Store>> GetDeletedStoresAsync();
-        Task<bool> CreateStoreAsync(string storeName);
-        Task<bool> UpdateStoreAsync(int id, string storeName);
+        Task<Store> CreateStoreAsync(string storeName, string address);
+        Task<Store> UpdateStoreAsync(int id, string storeName, string address);
         Task<bool> DeleteStoreAsync(int id);
         Task<bool> RestoreStoreAsync(int id);
+        Task<Store> GetStoreByIdAsync(int storeId);
 
+        Task<IEnumerable<Branch>> GetAllBranchesAsync();
         Task<IEnumerable<Branch>> GetBranchesByStoreIdAsync(int storeId);
-        Task<bool> CreateBranchAsync(int storeId, string branchName);
-        Task<bool> UpdateBranchAsync(int id, string branchName);
+        Task<Branch> CreateBranchAsync(int storeId, string branchName);
+        Task<Branch> UpdateBranchAsync(int id, string branchName);
         Task<bool> DeleteBranchAsync(int id);
+        Task<Branch> GetBranchByIdAsync(int branchId);
 
+        Task<IEnumerable<Room>> GetAllRoomsAsync();
         Task<IEnumerable<Room>> GetRoomsByBranchIdAsync(int branchId);
-        Task<bool> CreateRoomAsync(int branchId, string roomName);
-        Task<bool> UpdateRoomAsync(int id, string roomName);
+        Task<Room> CreateRoomAsync(int branchId, string roomName);
+        Task<Room> UpdateRoomAsync(int id, string roomName);
         Task<bool> DeleteRoomAsync(int id);
+        Task<Room> GetRoomByIdAsync(int roomId);
 
         Task<IEnumerable<Guest>> GetGuestsByRoomIdAsync(int roomId);
-        Task<bool> CreateGuestAsync(int storeId, int branchId, int roomId, string username, string password, string phoneNumber);
-        Task<bool> UpdateGuestAsync(string id, string username, string password, string phoneNumber);
+        Task<Guest> CreateGuestAsync(int roomId);
         Task<bool> DeleteGuestAsync(string id);
 
-        Task<IEnumerable<UserDto>> GetAllOwnersAsync();
-        Task<bool> CreateOwnerAsync(string username, string password, string email, int storeId);
-        Task<bool> UpdateOwnerAsync(string id, string username, string email);
-        Task<bool> DeleteOwnerAsync(string id);
-        Task<int?> GetOwnerStoreIdAsync(string ownerId);
+        Task<IEnumerable<UserDto>> GetAllMainOwnersAsync();
+        Task<UserDto> CreateMainOwnerAsync(string email, string password, int storeId);
+        Task<UserDto> UpdateMainOwnerAsync(string id, string email);
+        Task<bool> DeleteMainOwnerAsync(string id);
+        Task<int?> GetMainOwnerStoreIdAsync(string ownerId);
 
-        Task<bool> AdminLoginAsync(string username, string password);
+        Task<bool> AdminLoginAsync(string email, string password);
         Task LogoutAsync();
     }
 }

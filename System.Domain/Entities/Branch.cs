@@ -13,5 +13,9 @@ namespace System.Domain.Entities
         public List<Reward> Rewards { get; set; } = [];
         public List<CustomerPoints> CustomerPoints { get; set; } = [];
         public List<PointsSetting> PointsSettings { get; set; } = [];
+        public List<Customer> Customers { get; set; } = [];
+        public List<UserBranch> UserBranches { get; set; } = [];
+
     }
 }
+

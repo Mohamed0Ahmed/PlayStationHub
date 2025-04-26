@@ -47,6 +47,26 @@ namespace System.Infrastructure.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "1",
+                            Name = "Admin",
+                            NormalizedName = "ADMIN"
+                        },
+                        new
+                        {
+                            Id = "2",
+                            Name = "Owner",
+                            NormalizedName = "OWNER"
+                        },
+                        new
+                        {
+                            Id = "3",
+                            Name = "BranchManager",
+                            NormalizedName = "BRANCHMANAGER"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -137,6 +157,40 @@ namespace System.Infrastructure.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "1",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "eb9b3fdf-ddd3-4578-b47f-e7d0161de54e",
+                            Email = "admin@system.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = false,
+                            NormalizedEmail = "ADMIN@SYSTEM.COM",
+                            NormalizedUserName = "ADMIN@SYSTEM.COM",
+                            PasswordHash = "AQAAAAIAAYagAAAAEGv2qv1mUks9wso6dJQjpPwilf095v3X7aZ3tDf6rFEHGfnqviw0791OSwI5MFi/Ww==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "6ac43906-de4f-4904-b12f-f166101cb496",
+                            TwoFactorEnabled = false,
+                            UserName = "admin@system.com"
+                        },
+                        new
+                        {
+                            Id = "2",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "59492b14-351f-4df9-9564-a986a0eae145",
+                            Email = "owner@system.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = false,
+                            NormalizedEmail = "OWNER@SYSTEM.COM",
+                            NormalizedUserName = "OWNER@SYSTEM.COM",
+                            PasswordHash = "AQAAAAIAAYagAAAAEC9FskAx1agy2iM7Qi+j5V45PDb/YISVnGQIVQ6XoMLi9bEoa9BJ6Ad9SbdGTxU0/w==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "dbf0c21c-4bbc-4409-a36c-980a331e2c57",
+                            TwoFactorEnabled = false,
+                            UserName = "owner@system.com"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -199,6 +253,18 @@ namespace System.Infrastructure.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetUserRoles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            UserId = "1",
+                            RoleId = "1"
+                        },
+                        new
+                        {
+                            UserId = "2",
+                            RoleId = "2"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
@@ -261,6 +327,18 @@ namespace System.Infrastructure.Migrations
                     b.HasIndex("StoreId");
 
                     b.ToTable("Branches");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            BranchName = "Branch 1",
+                            CreatedOn = new DateTime(2025, 4, 26, 12, 16, 22, 61, DateTimeKind.Utc).AddTicks(8734),
+                            IsDeleted = false,
+                            IsHidden = false,
+                            LastModifiedOn = new DateTime(2025, 4, 26, 12, 16, 22, 61, DateTimeKind.Utc).AddTicks(8735),
+                            StoreId = 1
+                        });
                 });
 
             modelBuilder.Entity("System.Domain.Entities.Customer", b =>
@@ -270,6 +348,9 @@ namespace System.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BranchId")
+                        .HasColumnType("int");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
@@ -296,12 +377,9 @@ namespace System.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("StoreId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("StoreId", "PhoneNumber")
+                    b.HasIndex("BranchId", "PhoneNumber")
                         .IsUnique();
 
                     b.ToTable("Customers");
@@ -349,7 +427,8 @@ namespace System.Infrastructure.Migrations
 
                     b.HasIndex("BranchId");
 
-                    b.HasIndex("CustomerId");
+                    b.HasIndex("CustomerId", "BranchId")
+                        .IsUnique();
 
                     b.ToTable("CustomerPoints");
                 });
@@ -618,12 +697,17 @@ namespace System.Infrastructure.Migrations
                     b.Property<int>("PointsPerUnit")
                         .HasColumnType("int");
 
+                    b.Property<int?>("StoreId")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("BranchId");
+
+                    b.HasIndex("StoreId");
 
                     b.ToTable("PointsSettings");
                 });
@@ -670,9 +754,14 @@ namespace System.Infrastructure.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("StoreId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BranchId");
+
+                    b.HasIndex("StoreId");
 
                     b.ToTable("Products");
                 });
@@ -716,9 +805,14 @@ namespace System.Infrastructure.Migrations
                     b.Property<int>("RequiredPoints")
                         .HasColumnType("int");
 
+                    b.Property<int?>("StoreId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BranchId");
+
+                    b.HasIndex("StoreId");
 
                     b.ToTable("Rewards");
                 });
@@ -774,6 +868,10 @@ namespace System.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
 
@@ -795,16 +893,84 @@ namespace System.Infrastructure.Migrations
                     b.Property<DateTime>("LastModifiedOn")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("StoreName")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("StoreName")
+                    b.HasIndex("Name")
                         .IsUnique();
 
                     b.ToTable("Stores");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Address = "123 Main St",
+                            CreatedOn = new DateTime(2025, 4, 26, 12, 16, 22, 61, DateTimeKind.Utc).AddTicks(8646),
+                            IsDeleted = false,
+                            IsHidden = false,
+                            LastModifiedOn = new DateTime(2025, 4, 26, 12, 16, 22, 61, DateTimeKind.Utc).AddTicks(8651),
+                            Name = "Main Store"
+                        });
+                });
+
+            modelBuilder.Entity("System.Domain.Entities.UserBranch", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BranchId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserBranch");
+                });
+
+            modelBuilder.Entity("System.Domain.Entities.UserStore", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("StoreId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StoreId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserStores");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            StoreId = 1,
+                            UserId = "2"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -871,13 +1037,13 @@ namespace System.Infrastructure.Migrations
 
             modelBuilder.Entity("System.Domain.Entities.Customer", b =>
                 {
-                    b.HasOne("System.Domain.Entities.Store", "Store")
+                    b.HasOne("System.Domain.Entities.Branch", "Branch")
                         .WithMany("Customers")
-                        .HasForeignKey("StoreId")
+                        .HasForeignKey("BranchId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Store");
+                    b.Navigation("Branch");
                 });
 
             modelBuilder.Entity("System.Domain.Entities.CustomerPoints", b =>
@@ -891,7 +1057,7 @@ namespace System.Infrastructure.Migrations
                     b.HasOne("System.Domain.Entities.Customer", "Customer")
                         .WithMany("CustomerPoints")
                         .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Branch");
@@ -914,9 +1080,9 @@ namespace System.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("System.Domain.Entities.Store", "Store")
-                        .WithMany("Guests")
+                        .WithMany()
                         .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Branch");
@@ -1007,6 +1173,10 @@ namespace System.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("System.Domain.Entities.Store", null)
+                        .WithMany("PointsSettings")
+                        .HasForeignKey("StoreId");
+
                     b.Navigation("Branch");
                 });
 
@@ -1018,6 +1188,10 @@ namespace System.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("System.Domain.Entities.Store", null)
+                        .WithMany("Products")
+                        .HasForeignKey("StoreId");
+
                     b.Navigation("Branch");
                 });
 
@@ -1028,6 +1202,10 @@ namespace System.Infrastructure.Migrations
                         .HasForeignKey("BranchId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("System.Domain.Entities.Store", null)
+                        .WithMany("Rewards")
+                        .HasForeignKey("StoreId");
 
                     b.Navigation("Branch");
                 });
@@ -1043,9 +1221,49 @@ namespace System.Infrastructure.Migrations
                     b.Navigation("Branch");
                 });
 
+            modelBuilder.Entity("System.Domain.Entities.UserBranch", b =>
+                {
+                    b.HasOne("System.Domain.Entities.Branch", "Branch")
+                        .WithMany("UserBranches")
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("System.Domain.Entities.UserStore", b =>
+                {
+                    b.HasOne("System.Domain.Entities.Store", "Store")
+                        .WithMany("UserStores")
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Store");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("System.Domain.Entities.Branch", b =>
                 {
                     b.Navigation("CustomerPoints");
+
+                    b.Navigation("Customers");
 
                     b.Navigation("Guests");
 
@@ -1056,6 +1274,8 @@ namespace System.Infrastructure.Migrations
                     b.Navigation("Rewards");
 
                     b.Navigation("Rooms");
+
+                    b.Navigation("UserBranches");
                 });
 
             modelBuilder.Entity("System.Domain.Entities.Customer", b =>
@@ -1097,9 +1317,13 @@ namespace System.Infrastructure.Migrations
                 {
                     b.Navigation("Branches");
 
-                    b.Navigation("Customers");
+                    b.Navigation("PointsSettings");
 
-                    b.Navigation("Guests");
+                    b.Navigation("Products");
+
+                    b.Navigation("Rewards");
+
+                    b.Navigation("UserStores");
                 });
 #pragma warning restore 612, 618
         }

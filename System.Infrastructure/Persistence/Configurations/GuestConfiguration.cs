@@ -14,7 +14,7 @@ namespace System.Infrastructure.Persistence.Configurations
             builder.Property(g => g.Password)
                 .IsRequired();
 
-            builder.HasOne(g => g.Store)
+            builder.HasOne(g => g.Branch)
                 .WithMany(s => s.Guests)
                 .HasForeignKey(g => g.StoreId)
                 .OnDelete(DeleteBehavior.Restrict);

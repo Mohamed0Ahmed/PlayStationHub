@@ -11,15 +11,21 @@ namespace System.Infrastructure.Persistence.Configurations
             builder.Property(cp => cp.Points)
                 .IsRequired();
 
-            builder.HasOne(cp => cp.Customer)
-                .WithMany(c => c.CustomerPoints)
-                .HasForeignKey(cp => cp.CustomerId)
-                .OnDelete(DeleteBehavior.Restrict);
-
             builder.HasOne(cp => cp.Branch)
                 .WithMany(b => b.CustomerPoints)
                 .HasForeignKey(cp => cp.BranchId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(cp => cp.Customer)
+           .WithMany(c => c.CustomerPoints)
+           .HasForeignKey(cp => cp.CustomerId)
+           .OnDelete(DeleteBehavior.Cascade);
+
+
+
+            builder.HasIndex(cp => new { cp.CustomerId, cp.BranchId })
+                   .IsUnique();
         }
     }
 }
+

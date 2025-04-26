@@ -9,7 +9,7 @@ namespace MvcProject
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +17,6 @@ namespace MvcProject
 
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
-
 
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddControllersWithViews();
@@ -35,9 +34,6 @@ namespace MvcProject
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
 
-
-
-
             builder.Services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromHours(1);
@@ -50,8 +46,6 @@ namespace MvcProject
             #endregion
 
             var app = builder.Build();
-
-
 
             if (!app.Environment.IsDevelopment())
             {
@@ -83,7 +77,7 @@ namespace MvcProject
 
             #endregion
 
-            app.Run();
+            await app.RunAsync();
         }
     }
 }

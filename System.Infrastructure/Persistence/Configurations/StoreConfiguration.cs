@@ -8,7 +8,7 @@ namespace System.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<Store> builder)
         {
-            builder.Property(s => s.StoreName)
+            builder.Property(s => s.Name)
                 .IsRequired();
 
             builder.HasMany(s => s.Branches)
@@ -16,17 +16,11 @@ namespace System.Infrastructure.Persistence.Configurations
                 .HasForeignKey(b => b.StoreId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasMany(s => s.Guests)
-                .WithOne(g => g.Store)
-                .HasForeignKey(g => g.StoreId)
-                .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasMany(s => s.Customers)
-                .WithOne(c => c.Store)
-                .HasForeignKey(c => c.StoreId)
-                .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasIndex(s => s.StoreName).IsUnique();
+  
+
+            builder.HasIndex(s => s.Name).IsUnique();
         }
     }
 }

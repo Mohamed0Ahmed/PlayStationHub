@@ -11,9 +11,9 @@ namespace System.Infrastructure.Persistence.Configurations
             builder.Property(c => c.PhoneNumber)
                 .IsRequired();
 
-            builder.HasOne(c => c.Store)
+            builder.HasOne(c => c.Branch)
                 .WithMany(s => s.Customers)
-                .HasForeignKey(c => c.StoreId)
+                .HasForeignKey(c => c.BranchId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasMany(c => c.Orders)
@@ -31,7 +31,7 @@ namespace System.Infrastructure.Persistence.Configurations
                 .HasForeignKey(cp => cp.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasIndex(c => new { c.StoreId, c.PhoneNumber }).IsUnique();
+            builder.HasIndex(c => new { c.BranchId, c.PhoneNumber }).IsUnique();
         }
     }
 }

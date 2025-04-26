@@ -1,5 +1,5 @@
 ﻿using System.Domain.Entities;
-using System.Infrastructure.Abstraction;
+using System.Shared.BaseModel;
 
 namespace System.Application.Interfaces
 {

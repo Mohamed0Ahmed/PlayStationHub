@@ -191,16 +191,16 @@ namespace System.WebUI.Controllers
         public async Task<IActionResult> GetGuests(int roomId)
         {
             var guests = await _adminService.GetGuestsByRoomIdAsync(roomId);
-            return Json(guests.Select(g => new { id = g.Id, sessionToken = g.SessionToken }));
+            return Json(guests.Select(g => new { id = g.Id, username = g.Username, password = g.Password, storeId = g.StoreId }));
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateGuest(int roomId)
+        public async Task<IActionResult> CreateGuest(int roomId, int storeId, string username, string password)
         {
             try
             {
-                var guest = await _adminService.CreateGuestAsync(roomId);
-                return Json(new { success = true, guestId = guest.Id, sessionToken = guest.SessionToken });
+                var guest = await _adminService.CreateGuestAsync(roomId, storeId, username, password);
+                return Json(new { success = true, guestId = guest.Id, username = guest.Username, password = guest.Password, storeId = guest.StoreId });
             }
             catch (Exception ex)
             {
@@ -222,6 +222,19 @@ namespace System.WebUI.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetStoreNameById(int storeId)
+        {
+            try
+            {
+                var store = await _adminService.GetStoreByIdAsync(storeId);
+                return Json(new { success = true, storeName = store.Name });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
         [HttpGet]
         public async Task<IActionResult> GetOwners()
         {

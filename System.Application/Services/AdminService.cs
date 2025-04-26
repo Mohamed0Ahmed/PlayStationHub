@@ -1,38 +1,40 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.Application.Interfaces;
 using System.Domain.Entities;
-using System.Infrastructure.Abstraction;
+using System.Infrastructure.Persistence;
 using System.Shared.BaseModel;
 
-namespace System.Application.Services
+namespace System.Infrastructure.Services
 {
     public class AdminService : IAdminService
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly SignInManager<IdentityUser> _signInManager;
 
         public AdminService(
-            IUnitOfWork unitOfWork,
-            SignInManager<IdentityUser> signInManager,
+            ApplicationDbContext context,
             UserManager<IdentityUser> userManager,
-            RoleManager<IdentityRole> roleManager)
+            SignInManager<IdentityUser> signInManager)
         {
-            _unitOfWork = unitOfWork;
-            _signInManager = signInManager;
+            _context = context;
             _userManager = userManager;
-            _roleManager = roleManager;
+            _signInManager = signInManager;
         }
 
-        public async Task<IEnumerable<Store>> GetAllStoresAsync()
+        public async Task<List<Store>> GetAllStoresAsync()
         {
-            return await _unitOfWork.Repository<Store, int>().FindAsync(s => !s.IsDeleted);
+            return await _context.Stores
+                .Where(s => !s.IsDeleted)
+                .ToListAsync();
         }
 
-        public async Task<IEnumerable<Store>> GetDeletedStoresAsync()
+        public async Task<List<Store>> GetDeletedStoresAsync()
         {
-            return await _unitOfWork.Repository<Store, int>().FindAsync(s => s.IsDeleted);
+            return await _context.Stores
+                .Where(s => s.IsDeleted)
+                .ToListAsync();
         }
 
         public async Task<Store> CreateStoreAsync(string storeName, string address)
@@ -42,272 +44,257 @@ namespace System.Application.Services
                 Name = storeName,
                 Address = address
             };
-            await _unitOfWork.Repository<Store, int>().AddAsync(store);
-            await _unitOfWork.SaveChangesAsync();
+            _context.Stores.Add(store);
+            await _context.SaveChangesAsync();
             return store;
         }
 
         public async Task<Store> UpdateStoreAsync(int id, string storeName, string address)
         {
-            var store = await _unitOfWork.Repository<Store, int>().GetByIdAsync(id);
-            if (store == null || store.IsDeleted)
-                throw new Exception("Store not found.");
-
+            var store = await _context.Stores.FindAsync(id);
+            if (store == null || store.IsDeleted) throw new Exception("Store not found.");
             store.Name = storeName;
             store.Address = address;
-            _unitOfWork.Repository<Store, int>().Update(store);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return store;
         }
 
         public async Task<bool> DeleteStoreAsync(int id)
         {
-            await _unitOfWork.Repository<Store, int>().SoftDeleteAsync(id);
-            await _unitOfWork.SaveChangesAsync();
+            var store = await _context.Stores.FindAsync(id);
+            if (store == null || store.IsDeleted) return false;
+            store.IsDeleted = true;
+            await _context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> RestoreStoreAsync(int id)
         {
-            var store = await _unitOfWork.Repository<Store, int>().GetByIdAsync(id);
-            if (store == null || !store.IsDeleted)
-                return false;
-
+            var store = await _context.Stores.FindAsync(id);
+            if (store == null || !store.IsDeleted) return false;
             store.IsDeleted = false;
-            store.DeletedOn = null;
-            _unitOfWork.Repository<Store, int>().Update(store);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<Store> GetStoreByIdAsync(int storeId)
+        public async Task<Store> GetStoreByIdAsync(int id)
         {
-            return await _unitOfWork.Repository<Store, int>().GetByIdAsync(storeId);
+            var store = await _context.Stores.FindAsync(id);
+            if (store == null) throw new Exception("Store not found.");
+            return store;
         }
 
-        public async Task<IEnumerable<Branch>> GetAllBranchesAsync()
+        public async Task<List<Branch>> GetBranchesByStoreIdAsync(int storeId)
         {
-            return await _unitOfWork.Repository<Branch, int>().FindAsync(b => !b.IsDeleted);
-        }
-
-        public async Task<IEnumerable<Branch>> GetBranchesByStoreIdAsync(int storeId)
-        {
-            return await _unitOfWork.Repository<Branch, int>().FindAsync(b => b.StoreId == storeId && !b.IsDeleted);
+            return await _context.Branches
+                .Where(b => b.StoreId == storeId && !b.IsDeleted)
+                .ToListAsync();
         }
 
         public async Task<Branch> CreateBranchAsync(int storeId, string branchName)
         {
-            var store = await _unitOfWork.Repository<Store, int>().GetByIdAsync(storeId);
-            if (store == null || store.IsDeleted)
-                throw new Exception("Store not found.");
-
             var branch = new Branch
             {
                 StoreId = storeId,
                 BranchName = branchName
             };
-            await _unitOfWork.Repository<Branch, int>().AddAsync(branch);
-            await _unitOfWork.SaveChangesAsync();
+            _context.Branches.Add(branch);
+            await _context.SaveChangesAsync();
             return branch;
         }
 
         public async Task<Branch> UpdateBranchAsync(int id, string branchName)
         {
-            var branch = await _unitOfWork.Repository<Branch, int>().GetByIdAsync(id);
-            if (branch == null || branch.IsDeleted)
-                throw new Exception("Branch not found.");
-
+            var branch = await _context.Branches.FindAsync(id);
+            if (branch == null || branch.IsDeleted) throw new Exception("Branch not found.");
             branch.BranchName = branchName;
-            _unitOfWork.Repository<Branch, int>().Update(branch);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return branch;
         }
 
         public async Task<bool> DeleteBranchAsync(int id)
         {
-            await _unitOfWork.Repository<Branch, int>().SoftDeleteAsync(id);
-            await _unitOfWork.SaveChangesAsync();
+            var branch = await _context.Branches.FindAsync(id);
+            if (branch == null || branch.IsDeleted) return false;
+            branch.IsDeleted = true;
+            await _context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<Branch> GetBranchByIdAsync(int branchId)
+        public async Task<List<Room>> GetRoomsByBranchIdAsync(int branchId)
         {
-            return await _unitOfWork.Repository<Branch, int>().GetByIdAsync(branchId);
-        }
-
-        public async Task<IEnumerable<Room>> GetAllRoomsAsync()
-        {
-            return await _unitOfWork.Repository<Room, int>().FindAsync(r => !r.IsDeleted);
-        }
-
-        public async Task<IEnumerable<Room>> GetRoomsByBranchIdAsync(int branchId)
-        {
-            return await _unitOfWork.Repository<Room, int>().FindAsync(r => r.BranchId == branchId && !r.IsDeleted);
+            return await _context.Rooms
+                .Where(r => r.BranchId == branchId && !r.IsDeleted)
+                .ToListAsync();
         }
 
         public async Task<Room> CreateRoomAsync(int branchId, string roomName)
         {
-            var branch = await _unitOfWork.Repository<Branch, int>().GetByIdAsync(branchId);
-            if (branch == null || branch.IsDeleted)
-                throw new Exception("Branch not found.");
-
             var room = new Room
             {
                 BranchId = branchId,
                 RoomName = roomName
             };
-            await _unitOfWork.Repository<Room, int>().AddAsync(room);
-            await _unitOfWork.SaveChangesAsync();
+            _context.Rooms.Add(room);
+            await _context.SaveChangesAsync();
             return room;
         }
 
         public async Task<Room> UpdateRoomAsync(int id, string roomName)
         {
-            var room = await _unitOfWork.Repository<Room, int>().GetByIdAsync(id);
-            if (room == null || room.IsDeleted)
-                throw new Exception("Room not found.");
-
+            var room = await _context.Rooms.FindAsync(id);
+            if (room == null || room.IsDeleted) throw new Exception("Room not found.");
             room.RoomName = roomName;
-            _unitOfWork.Repository<Room, int>().Update(room);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return room;
         }
 
         public async Task<bool> DeleteRoomAsync(int id)
         {
-            await _unitOfWork.Repository<Room, int>().SoftDeleteAsync(id);
-            await _unitOfWork.SaveChangesAsync();
+            var room = await _context.Rooms.FindAsync(id);
+            if (room == null || room.IsDeleted) return false;
+            room.IsDeleted = true;
+            await _context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<Room> GetRoomByIdAsync(int roomId)
+        public async Task<List<Guest>> GetGuestsByRoomIdAsync(int roomId)
         {
-            return await _unitOfWork.Repository<Room, int>().GetByIdAsync(roomId);
+            return await _context.Guests
+                .Where(g => g.RoomId == roomId && !g.IsDeleted)
+                .ToListAsync();
         }
 
-        public async Task<IEnumerable<Guest>> GetGuestsByRoomIdAsync(int roomId)
+        public async Task<Guest> CreateGuestAsync(int roomId, int storeId, string username, string password)
         {
-            return await _unitOfWork.Repository<Guest, string>().FindAsync(g => g.RoomId == roomId && !g.IsDeleted);
-        }
-
-        public async Task<Guest> CreateGuestAsync(int roomId)
-        {
-            var room = await _unitOfWork.Repository<Room, int>().GetByIdAsync(roomId);
-            if (room == null || room.IsDeleted)
-                throw new Exception("Room not found.");
+            var existingGuest = await _context.Guests
+                .FirstOrDefaultAsync(g => g.Username == username && g.StoreId == storeId && !g.IsDeleted);
+            if (existingGuest != null) throw new Exception("Guest with this username already exists in this store.");
 
             var guest = new Guest
             {
                 Id = Guid.NewGuid().ToString(),
                 RoomId = roomId,
-                SessionToken = Guid.NewGuid().ToString()
+                StoreId = storeId,
+                Username = username,
+                Password = password // In a real app, hash the password
             };
-            await _unitOfWork.Repository<Guest, string>().AddAsync(guest);
-            await _unitOfWork.SaveChangesAsync();
+            _context.Guests.Add(guest);
+            await _context.SaveChangesAsync();
             return guest;
         }
 
         public async Task<bool> DeleteGuestAsync(string id)
         {
-            await _unitOfWork.Repository<Guest, string>().SoftDeleteAsync(id);
-            await _unitOfWork.SaveChangesAsync();
+            var guest = await _context.Guests.FindAsync(id);
+            if (guest == null || guest.IsDeleted) return false;
+            guest.IsDeleted = true;
+            await _context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<IEnumerable<UserDto>> GetAllMainOwnersAsync()
+        public async Task<bool> GuestLoginAsync(string username, string password, string storeName)
+        {
+            var store = await _context.Stores
+                .FirstOrDefaultAsync(s => s.Name == storeName && !s.IsDeleted);
+            if (store == null) return false;
+
+            var guest = await _context.Guests
+                .FirstOrDefaultAsync(g => g.Username == username && g.Password == password && g.StoreId == store.Id && !g.IsDeleted);
+            if (guest == null) return false;
+
+            var user = new IdentityUser { UserName = username, Email = $"{username}@guest.com" };
+            var result = await _userManager.CreateAsync(user, password);
+            if (!result.Succeeded) return false;
+
+            await _userManager.AddToRoleAsync(user, "Guest");
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            return true;
+        }
+
+        public async Task<Customer> CreateCustomerAsync(string phoneNumber, int branchId)
+        {
+            var existingCustomer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.PhoneNumber == phoneNumber && c.BranchId == branchId && !c.IsDeleted);
+            if (existingCustomer != null) return existingCustomer;
+
+            var customer = new Customer
+            {
+                PhoneNumber = phoneNumber,
+                BranchId = branchId
+            };
+            _context.Customers.Add(customer);
+            await _context.SaveChangesAsync();
+            return customer;
+        }
+
+        public async Task<List<UserDto>> GetAllMainOwnersAsync()
         {
             var owners = await _userManager.GetUsersInRoleAsync("Owner");
             return owners.Select(o => new UserDto
             {
                 Id = o.Id,
-                Email = o.Email,
-                IsLocked = o.LockoutEnd != null && o.LockoutEnd > DateTimeOffset.UtcNow
+                Email = o.Email
             }).ToList();
         }
 
         public async Task<UserDto> CreateMainOwnerAsync(string email, string password, int storeId)
         {
-            var store = await _unitOfWork.Repository<Store, int>().GetByIdAsync(storeId);
-            if (store == null || store.IsDeleted)
-                throw new Exception("Store not found.");
-
-            var user = new IdentityUser
-            {
-                UserName = email,
-                Email = email,
-                EmailConfirmed = true
-            };
-
+            var user = new IdentityUser { UserName = email, Email = email };
             var result = await _userManager.CreateAsync(user, password);
-            if (!result.Succeeded)
-                throw new Exception("Failed to create owner: " + string.Join(", ", result.Errors.Select(e => e.Description)));
+            if (!result.Succeeded) throw new Exception("Failed to create owner: " + string.Join(", ", result.Errors.Select(e => e.Description)));
 
             await _userManager.AddToRoleAsync(user, "Owner");
-
             var userStore = new UserStore
             {
                 UserId = user.Id,
                 StoreId = storeId
             };
-            await _unitOfWork.Repository<UserStore, int>().AddAsync(userStore);
-            await _unitOfWork.SaveChangesAsync();
+            _context.UserStores.Add(userStore);
+            await _context.SaveChangesAsync();
 
-            return new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email,
-                IsLocked = false
-            };
+            return new UserDto { Id = user.Id, Email = user.Email };
         }
 
         public async Task<UserDto> UpdateMainOwnerAsync(string id, string email)
         {
             var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
-                throw new Exception("Owner not found.");
-
+            if (user == null) throw new Exception("Owner not found.");
             user.Email = email;
             user.UserName = email;
-            var result = await _userManager.UpdateAsync(user);
-            if (!result.Succeeded)
-                throw new Exception("Failed to update owner: " + string.Join(", ", result.Errors.Select(e => e.Description)));
-
-            return new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email,
-                IsLocked = user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow
-            };
+            await _userManager.UpdateAsync(user);
+            return new UserDto { Id = user.Id, Email = user.Email };
         }
 
         public async Task<bool> DeleteMainOwnerAsync(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
-                return false;
-
+            if (user == null) return false;
             var result = await _userManager.DeleteAsync(user);
             return result.Succeeded;
-        }
-
-        public async Task<int?> GetMainOwnerStoreIdAsync(string ownerId)
-        {
-            var userStore = await _unitOfWork.Repository<UserStore, int>()
-                .GetAsync(us => us.UserId == ownerId);
-            return userStore?.StoreId;
         }
 
         public async Task<bool> AdminLoginAsync(string email, string password)
         {
             var user = await _userManager.FindByEmailAsync(email);
-            if (user == null)
-                return false;
+            if (user == null) return false;
 
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-            if (!isAdmin)
-                return false;
+            if (!isAdmin) return false;
 
-            var result = await _signInManager.PasswordSignInAsync(email, password, false, false);
+            var result = await _signInManager.PasswordSignInAsync(user, password, false, false);
+            return result.Succeeded;
+        }
+
+        public async Task<bool> OwnerLoginAsync(string email, string password)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null) return false;
+
+            var isOwner = await _userManager.IsInRoleAsync(user, "Owner");
+            if (!isOwner) return false;
+
+            var result = await _signInManager.PasswordSignInAsync(user, password, false, false);
             return result.Succeeded;
         }
 

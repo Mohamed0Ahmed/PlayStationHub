@@ -37,7 +37,7 @@
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Reward" asp-action="CreateReward">Add Reward</a>
                             </li>
                         }
-                        @if (User.IsInRole("Customer"))
+                        @if (Context.Session.GetInt32("CustomerId") != null)
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Product" asp-action="GetProducts">Order Products</a>

@@ -280,7 +280,7 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Session Token</th>
+                            <th>Username</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -303,8 +303,37 @@
             <div class="modal-body">
                 <form id="createGuestForm">
                     <input type="hidden" id="createGuestRoomId" name="roomId" />
+                    <input type="hidden" id="createGuestStoreId" name="storeId" />
+                    <div class="mb-3">
+                        <label for="guestUsername" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="guestUsername" name="username" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="guestPassword" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="guestPassword" name="password" required />
+                    </div>
                     <button type="submit" class="btn btn-primary">Add Guest</button>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generate QR Code Modal -->
+<div class="modal fade" id="generateQRCodeModal" tabindex="-1" aria-labelledby="generateQRCodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="generateQRCodeModalLabel">Guest QR Code</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <img id="qrCodeImage" src="" alt="QR Code" />
+                </div>
+                <div class="text-center mt-3">
+                    <a id="qrCodeDownloadLink" href="" download="qrcode.png" class="btn btn-primary">Download QR Code</a>
+                </div>
             </div>
         </div>
     </div>
@@ -368,5 +397,6 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="~/js/adminDashboard.js" asp-append-version="true"></script>
 }

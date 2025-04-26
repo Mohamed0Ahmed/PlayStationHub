@@ -8,7 +8,6 @@ namespace System.Domain.Entities
         public int BranchId { get; set; }
         public Branch Branch { get; set; }
         public List<Order> Orders { get; set; } = [];
-        public List<HelpRequest> HelpRequests { get; set; } = [];
         public List<CustomerPoints> CustomerPoints { get; set; } = [];
     }
 }

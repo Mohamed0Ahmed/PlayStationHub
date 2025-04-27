@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Identity;
 using System.Infrastructure.Persistence;
 using System.Infrastructure;
+using System.Application;
 using System.Infrastructure.Abstraction;
 using System.Infrastructure.UnitOfWorks;
 using System.Infrastructure.GenericRepositories;
+using System.Shared;
 
 namespace MvcProject
 {
@@ -21,7 +23,7 @@ namespace MvcProject
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddControllersWithViews();
             builder.Services.AddInfrastructureServices(builder.Configuration);
-            //builder.Services.AddApplicationServices(builder.Configuration);
+            builder.Services.AddApplicationServices(builder.Configuration);
 
             builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
             {
@@ -34,7 +36,7 @@ namespace MvcProject
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
 
-            builder.Services.AddSession(options =>
+            builder.Services.AddSession(options => 
             {
                 options.IdleTimeout = TimeSpan.FromHours(1);
                 options.Cookie.HttpOnly = true;
@@ -63,7 +65,7 @@ namespace MvcProject
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseSession();
+            app.UseSession(); 
 
             app.MapControllerRoute(
                 name: "default",

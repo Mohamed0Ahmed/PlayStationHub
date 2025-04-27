@@ -330,15 +330,14 @@
                 $('#guestsTable tbody').empty();
                 guests.forEach(guest => {
                     $('#guestsTable tbody').append(`
-                    <tr data-guest-id="${guest.id}">
-                        <td>${guest.id}</td>
-                        <td>${guest.username}</td>
-                        <td>
-                            <button type="button" class="btn btn-info btn-sm generate-qrcode-btn" data-guest-id="${guest.id}" data-username="${guest.username}" data-password="${guest.password}" data-store-id="${guest.storeId}">Generate QR Code</button>
-                            <button type="button" class="btn btn-danger btn-sm delete-guest-btn" data-guest-id="${guest.id}">Delete</button>
-                        </td>
-                    </tr>
-                `);
+                        <tr data-guest-id="${guest.id}">
+                            <td>${guest.id}</td>
+                            <td>${guest.username}</td>
+                            <td>
+                                <button type="button" class="btn btn-danger btn-sm delete-guest-btn" data-guest-id="${guest.id}">Delete</button>
+                            </td>
+                        </tr>
+                    `);
                 });
             }
         });
@@ -359,15 +358,14 @@
                 if (response.success) {
                     $('#createGuestModal').modal('hide');
                     $('#guestsTable tbody').append(`
-                    <tr data-guest-id="${response.guestId}">
-                        <td>${response.guestId}</td>
-                        <td>${response.username}</td>
-                        <td>
-                            <button type="button" class="btn btn-info btn-sm generate-qrcode-btn" data-guest-id="${response.guestId}" data-username="${response.username}" data-password="${response.password}" data-store-id="${response.storeId}">Generate QR Code</button>
-                            <button type="button" class="btn btn-danger btn-sm delete-guest-btn" data-guest-id="${response.guestId}">Delete</button>
-                        </td>
-                    </tr>
-                `);
+                        <tr data-guest-id="${response.guestId}">
+                            <td>${response.guestId}</td>
+                            <td>${response.username}</td>
+                            <td>
+                                <button type="button" class="btn btn-danger btn-sm delete-guest-btn" data-guest-id="${response.guestId}">Delete</button>
+                            </td>
+                        </tr>
+                    `);
                     $('#guestUsername').val('');
                     $('#guestPassword').val('');
                 } else {
@@ -508,15 +506,15 @@
                 $('#deletedStoresTable tbody').empty();
                 stores.forEach(store => {
                     $('#deletedStoresTable tbody').append(`
-                    <tr data-store-id="${store.id}">
-                        <td>${store.id}</td>
-                        <td>${store.name}</td>
-                        <td>${store.address}</td>
-                        <td>
-                            <button type="button" class="btn btn-success btn-sm restore-store-btn" data-store-id="${store.id}">Restore</button>
-                        </td>
-                    </tr>
-                `);
+                        <tr data-store-id="${store.id}">
+                            <td>${store.id}</td>
+                            <td>${store.name}</td>
+                            <td>${store.address}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm restore-store-btn" data-store-id="${store.id}">Restore</button>
+                            </td>
+                        </tr>
+                    `);
                 });
             }
         });
@@ -534,50 +532,19 @@
                 if (response.success) {
                     $(`#deletedStoresTable tr[data-store-id="${storeId}"]`).remove();
                     $('#storesTable tbody').append(`
-                    <tr data-store-id="${storeId}">
-                        <td>${storeId}</td>
-                        <td>${response.storeName}</td>
-                        <td>${response.storeAddress}</td>
-                        <td>
-                            <button type="button" class="btn btn-info btn-sm view-branches-btn" data-store-id="${storeId}">View Branches</button>
-                            <button type="button" class="btn btn-warning btn-sm edit-store-btn" data-store-id="${storeId}" data-store-name="${response.storeName}" data-store-address="${response.storeAddress}">Edit</button>
-                            <button type="button" class="btn btn-danger btn-sm delete-store-btn" data-store-id="${storeId}">Delete</button>
-                        </td>
-                    </tr>
-                `);
+                        <tr data-store-id="${storeId}">
+                            <td>${storeId}</td>
+                            <td>${response.storeName}</td>
+                            <td>${response.storeAddress}</td>
+                            <td>
+                                <button type="button" class="btn btn-info btn-sm view-branches-btn" data-store-id="${storeId}">View Branches</button>
+                                <button type="button" class="btn btn-warning btn-sm edit-store-btn" data-store-id="${storeId}" data-store-name="${response.storeName}" data-store-address="${response.storeAddress}">Edit</button>
+                                <button type="button" class="btn btn-danger btn-sm delete-store-btn" data-store-id="${storeId}">Delete</button>
+                            </td>
+                        </tr>
+                    `);
                 } else {
                     alert('Failed to restore store: ' + response.message);
-                }
-            }
-        });
-    });
-
-
-    $(document).on('click', '.generate-qrcode-btn', function () {
-        const guestId = $(this).data('guest-id');
-        const username = $(this).data('username');
-        const password = $(this).data('password');
-        const storeId = $(this).data('store-id');
-
-        $.ajax({
-            url: '/Admin/GetStoreNameById',
-            method: 'GET',
-            data: { storeId: storeId },
-            success: function (response) {
-                if (response.success) {
-                    const storeName = response.storeName;
-                    const loginUrl = `${window.location.origin}/Account/Login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&storeName=${encodeURIComponent(storeName)}`;
-                    QRCode.toDataURL(loginUrl, { width: 200, margin: 1 }, function (error, url) {
-                        if (error) {
-                            console.error(error);
-                            return;
-                        }
-                        $('#qrCodeImage').attr('src', url);
-                        $('#qrCodeDownloadLink').attr('href', url);
-                        $('#generateQRCodeModal').modal('show');
-                    });
-                } else {
-                    alert('Failed to get store name: ' + response.message);
                 }
             }
         });

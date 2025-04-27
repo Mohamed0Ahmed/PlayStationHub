@@ -2,8 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Application.Interfaces;
 
-
-namespace System.WebUI.Controllers
+namespace MvcProject.Controllers
 {
     [Authorize(Roles = "Admin")]
     public class AdminController : Controller
@@ -19,6 +18,13 @@ namespace System.WebUI.Controllers
         {
             var stores = await _adminService.GetAllStoresAsync();
             return View(stores);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetDeletedStores()
+        {
+            var stores = await _adminService.GetDeletedStoresAsync();
+            return Json(stores);
         }
 
         [HttpPost]
@@ -54,8 +60,8 @@ namespace System.WebUI.Controllers
         {
             try
             {
-                var result = await _adminService.DeleteStoreAsync(id);
-                return Json(new { success = result });
+                var success = await _adminService.DeleteStoreAsync(id);
+                return Json(new { success });
             }
             catch (Exception ex)
             {
@@ -63,25 +69,14 @@ namespace System.WebUI.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetDeletedStores()
-        {
-            var deletedStores = await _adminService.GetDeletedStoresAsync();
-            return Json(deletedStores.Select(s => new { id = s.Id, name = s.Name, address = s.Address }));
-        }
-
         [HttpPost]
         public async Task<IActionResult> RestoreStore(int id)
         {
             try
             {
-                var result = await _adminService.RestoreStoreAsync(id);
-                if (result)
-                {
-                    var store = await _adminService.GetStoreByIdAsync(id);
-                    return Json(new { success = true, storeName = store.Name, storeAddress = store.Address });
-                }
-                return Json(new { success = false, message = "Store not found or already restored." });
+                var success = await _adminService.RestoreStoreAsync(id);
+                var store = await _adminService.GetStoreByIdAsync(id);
+                return Json(new { success, storeName = store.Name, storeAddress = store.Address });
             }
             catch (Exception ex)
             {
@@ -93,7 +88,7 @@ namespace System.WebUI.Controllers
         public async Task<IActionResult> GetBranches(int storeId)
         {
             var branches = await _adminService.GetBranchesByStoreIdAsync(storeId);
-            return Json(branches.Select(b => new { id = b.Id, branchName = b.BranchName }));
+            return Json(branches);
         }
 
         [HttpPost]
@@ -129,8 +124,8 @@ namespace System.WebUI.Controllers
         {
             try
             {
-                var result = await _adminService.DeleteBranchAsync(id);
-                return Json(new { success = result });
+                var success = await _adminService.DeleteBranchAsync(id);
+                return Json(new { success });
             }
             catch (Exception ex)
             {
@@ -142,7 +137,7 @@ namespace System.WebUI.Controllers
         public async Task<IActionResult> GetRooms(int branchId)
         {
             var rooms = await _adminService.GetRoomsByBranchIdAsync(branchId);
-            return Json(rooms.Select(r => new { id = r.Id, roomName = r.RoomName }));
+            return Json(rooms);
         }
 
         [HttpPost]
@@ -178,8 +173,8 @@ namespace System.WebUI.Controllers
         {
             try
             {
-                var result = await _adminService.DeleteRoomAsync(id);
-                return Json(new { success = result });
+                var success = await _adminService.DeleteRoomAsync(id);
+                return Json(new { success });
             }
             catch (Exception ex)
             {
@@ -191,7 +186,7 @@ namespace System.WebUI.Controllers
         public async Task<IActionResult> GetGuests(int roomId)
         {
             var guests = await _adminService.GetGuestsByRoomIdAsync(roomId);
-            return Json(guests.Select(g => new { id = g.Id, username = g.Username, password = g.Password, storeId = g.StoreId }));
+            return Json(guests);
         }
 
         [HttpPost]
@@ -200,7 +195,7 @@ namespace System.WebUI.Controllers
             try
             {
                 var guest = await _adminService.CreateGuestAsync(roomId, storeId, username, password);
-                return Json(new { success = true, guestId = guest.Id, username = guest.Username, password = guest.Password, storeId = guest.StoreId });
+                return Json(new { success = true, guestId = guest.Id, username = guest.Username });
             }
             catch (Exception ex)
             {
@@ -213,8 +208,8 @@ namespace System.WebUI.Controllers
         {
             try
             {
-                var result = await _adminService.DeleteGuestAsync(id);
-                return Json(new { success = result });
+                var success = await _adminService.DeleteGuestAsync(id);
+                return Json(new { success });
             }
             catch (Exception ex)
             {
@@ -223,23 +218,10 @@ namespace System.WebUI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetStoreNameById(int storeId)
-        {
-            try
-            {
-                var store = await _adminService.GetStoreByIdAsync(storeId);
-                return Json(new { success = true, storeName = store.Name });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-        [HttpGet]
         public async Task<IActionResult> GetOwners()
         {
             var owners = await _adminService.GetAllMainOwnersAsync();
-            return Json(owners.Select(o => new { id = o.Id, email = o.Email }));
+            return Json(owners);
         }
 
         [HttpPost]
@@ -275,19 +257,13 @@ namespace System.WebUI.Controllers
         {
             try
             {
-                var result = await _adminService.DeleteMainOwnerAsync(id);
-                return Json(new { success = result });
+                var success = await _adminService.DeleteMainOwnerAsync(id);
+                return Json(new { success });
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
             }
-        }
-
-        public async Task<IActionResult> Logout()
-        {
-            await _adminService.LogoutAsync();
-            return RedirectToAction("Index", "Home");
         }
     }
 }

@@ -23,7 +23,7 @@ namespace System.Application.Interfaces
         Task<List<Guest>> GetGuestsByRoomIdAsync(int roomId);
         Task<Guest> CreateGuestAsync(int roomId, int storeId, string username, string password);
         Task<bool> DeleteGuestAsync(string id);
-        Task<bool> GuestLoginAsync(string username, string password, string storeName);
+        Task<string> GuestLoginAsync(string username, string password, string storeName);
         Task<Customer> CreateCustomerAsync(string phoneNumber, int branchId);
         Task<List<UserDto>> GetAllMainOwnersAsync();
         Task<UserDto> CreateMainOwnerAsync(string email, string password, int storeId);

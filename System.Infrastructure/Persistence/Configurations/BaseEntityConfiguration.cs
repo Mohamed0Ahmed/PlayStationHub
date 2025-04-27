@@ -40,9 +40,8 @@ namespace System.Infrastructure.Persistence.Configurations
             builder.Property(e => e.DeletedOn)
                 .IsRequired(false);
 
-            builder.HasQueryFilter(e => !e.IsDeleted);
+            builder.HasQueryFilter(e => !e.IsDeleted && !e.IsHidden);
 
-            builder.HasQueryFilter(e => !e.IsHidden);
 
             builder.HasIndex(e => e.CreatedOn);
             builder.HasIndex(e => e.LastModifiedOn);

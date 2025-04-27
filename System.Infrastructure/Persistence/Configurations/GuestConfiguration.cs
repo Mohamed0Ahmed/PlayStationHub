@@ -14,6 +14,8 @@ namespace System.Infrastructure.Persistence.Configurations
             builder.Property(g => g.Password)
                 .IsRequired();
 
+            builder.Property(g => g.CurrentSessionId)
+            .IsRequired(false);
 
 
             builder.HasOne(g => g.Room)

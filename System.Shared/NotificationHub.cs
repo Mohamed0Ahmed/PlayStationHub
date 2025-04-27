@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 
-namespace MvcProject
+namespace System.Shared
 {
     public class NotificationHub : Hub
     {
@@ -17,6 +17,11 @@ namespace MvcProject
         public Task JoinOwnersGroup()
         {
             return Groups.AddToGroupAsync(Context.ConnectionId, "Owners");
+        }
+
+        public async Task ForceLogout(string message)
+        {
+            await Clients.Caller.SendAsync("ReceiveForceLogout", message);
         }
     }
 }

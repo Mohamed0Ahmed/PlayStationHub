@@ -8,7 +8,7 @@
 
 <!-- Logout Button -->
 <div class="text-end mb-4">
-    <a href="@Url.Action("Logout", "Admin")" class="btn btn-secondary">Logout</a>
+    <a href="@Url.Action("Logout", "Account")" class="btn btn-secondary">Logout</a>
 </div>
 
 <!-- Stores Table -->
@@ -41,6 +41,7 @@
         </tbody>
     </table>
 </div>
+
 <!-- Deleted Stores Table -->
 <div class="mb-4">
     <h4>Deleted Stores</h4>
@@ -319,26 +320,6 @@
     </div>
 </div>
 
-<!-- Generate QR Code Modal -->
-<div class="modal fade" id="generateQRCodeModal" tabindex="-1" aria-labelledby="generateQRCodeModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="generateQRCodeModalLabel">Guest QR Code</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center">
-                    <img id="qrCodeImage" src="" alt="QR Code" />
-                </div>
-                <div class="text-center mt-3">
-                    <a id="qrCodeDownloadLink" href="" download="qrcode.png" class="btn btn-primary">Download QR Code</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Create Owner Modal -->
 <div class="modal fade" id="createOwnerModal" tabindex="-1" aria-labelledby="createOwnerModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -397,6 +378,5 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="~/js/adminDashboard.js" asp-append-version="true"></script>
 }

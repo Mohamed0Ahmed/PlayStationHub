@@ -1,26 +1,31 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Application.Interfaces;
 using System.Domain.Entities;
 using System.Infrastructure.Persistence;
+using System.Shared;
 using System.Shared.BaseModel;
 
-namespace System.Infrastructure.Services
+namespace System.Application.Services
 {
     public class AdminService : IAdminService
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly IHubContext<NotificationHub> _hubContext;
 
         public AdminService(
             ApplicationDbContext context,
             UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager)
+            SignInManager<IdentityUser> signInManager,
+            IHubContext<NotificationHub> hubContext)
         {
             _context = context;
             _userManager = userManager;
             _signInManager = signInManager;
+            _hubContext = hubContext;
         }
 
         public async Task<List<Store>> GetAllStoresAsync()
@@ -39,6 +44,10 @@ namespace System.Infrastructure.Services
 
         public async Task<Store> CreateStoreAsync(string storeName, string address)
         {
+            var existingStore = await _context.Stores
+                .FirstOrDefaultAsync(s => s.Name == storeName && !s.IsDeleted);
+            if (existingStore != null) throw new Exception("Store already exists.");
+
             var store = new Store
             {
                 Name = storeName,
@@ -62,7 +71,7 @@ namespace System.Infrastructure.Services
         public async Task<bool> DeleteStoreAsync(int id)
         {
             var store = await _context.Stores.FindAsync(id);
-            if (store == null || store.IsDeleted) return false;
+            if (store == null || store.IsDeleted) throw new Exception("Store not found.");
             store.IsDeleted = true;
             await _context.SaveChangesAsync();
             return true;
@@ -71,7 +80,7 @@ namespace System.Infrastructure.Services
         public async Task<bool> RestoreStoreAsync(int id)
         {
             var store = await _context.Stores.FindAsync(id);
-            if (store == null || !store.IsDeleted) return false;
+            if (store == null || !store.IsDeleted) throw new Exception("Store not found or not deleted.");
             store.IsDeleted = false;
             await _context.SaveChangesAsync();
             return true;
@@ -93,10 +102,17 @@ namespace System.Infrastructure.Services
 
         public async Task<Branch> CreateBranchAsync(int storeId, string branchName)
         {
+            var store = await _context.Stores.FindAsync(storeId);
+            if (store == null || store.IsDeleted) throw new Exception("Store not found.");
+
+            var existingBranch = await _context.Branches
+                .FirstOrDefaultAsync(b => b.BranchName == branchName && b.StoreId == storeId && !b.IsDeleted);
+            if (existingBranch != null) throw new Exception("Branch already exists in this store.");
+
             var branch = new Branch
             {
-                StoreId = storeId,
-                BranchName = branchName
+                BranchName = branchName,
+                StoreId = storeId
             };
             _context.Branches.Add(branch);
             await _context.SaveChangesAsync();
@@ -115,7 +131,7 @@ namespace System.Infrastructure.Services
         public async Task<bool> DeleteBranchAsync(int id)
         {
             var branch = await _context.Branches.FindAsync(id);
-            if (branch == null || branch.IsDeleted) return false;
+            if (branch == null || branch.IsDeleted) throw new Exception("Branch not found.");
             branch.IsDeleted = true;
             await _context.SaveChangesAsync();
             return true;
@@ -130,10 +146,17 @@ namespace System.Infrastructure.Services
 
         public async Task<Room> CreateRoomAsync(int branchId, string roomName)
         {
+            var branch = await _context.Branches.FindAsync(branchId);
+            if (branch == null || branch.IsDeleted) throw new Exception("Branch not found.");
+
+            var existingRoom = await _context.Rooms
+                .FirstOrDefaultAsync(r => r.RoomName == roomName && r.BranchId == branchId && !r.IsDeleted);
+            if (existingRoom != null) throw new Exception("Room already exists in this branch.");
+
             var room = new Room
             {
-                BranchId = branchId,
-                RoomName = roomName
+                RoomName = roomName,
+                BranchId = branchId
             };
             _context.Rooms.Add(room);
             await _context.SaveChangesAsync();
@@ -152,7 +175,7 @@ namespace System.Infrastructure.Services
         public async Task<bool> DeleteRoomAsync(int id)
         {
             var room = await _context.Rooms.FindAsync(id);
-            if (room == null || room.IsDeleted) return false;
+            if (room == null || room.IsDeleted) throw new Exception("Room not found.");
             room.IsDeleted = true;
             await _context.SaveChangesAsync();
             return true;
@@ -161,6 +184,7 @@ namespace System.Infrastructure.Services
         public async Task<List<Guest>> GetGuestsByRoomIdAsync(int roomId)
         {
             return await _context.Guests
+                .Include(g => g.Room)
                 .Where(g => g.RoomId == roomId && !g.IsDeleted)
                 .ToListAsync();
         }
@@ -171,13 +195,14 @@ namespace System.Infrastructure.Services
                 .FirstOrDefaultAsync(g => g.Username == username && g.StoreId == storeId && !g.IsDeleted);
             if (existingGuest != null) throw new Exception("Guest with this username already exists in this store.");
 
+            var hasher = new PasswordHasher<Guest>();
             var guest = new Guest
             {
                 Id = Guid.NewGuid().ToString(),
                 RoomId = roomId,
                 StoreId = storeId,
                 Username = username,
-                Password = password // In a real app, hash the password
+                Password = hasher.HashPassword(null, password)
             };
             _context.Guests.Add(guest);
             await _context.SaveChangesAsync();
@@ -187,29 +212,38 @@ namespace System.Infrastructure.Services
         public async Task<bool> DeleteGuestAsync(string id)
         {
             var guest = await _context.Guests.FindAsync(id);
-            if (guest == null || guest.IsDeleted) return false;
+            if (guest == null || guest.IsDeleted) throw new Exception("Guest not found.");
             guest.IsDeleted = true;
             await _context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<bool> GuestLoginAsync(string username, string password, string storeName)
+        public async Task<string> GuestLoginAsync(string username, string password, string storeName)
         {
             var store = await _context.Stores
                 .FirstOrDefaultAsync(s => s.Name == storeName && !s.IsDeleted);
-            if (store == null) return false;
+            if (store == null) throw new Exception("Store not found.");
 
             var guest = await _context.Guests
-                .FirstOrDefaultAsync(g => g.Username == username && g.Password == password && g.StoreId == store.Id && !g.IsDeleted);
-            if (guest == null) return false;
+                .Include(g => g.Room)
+                .FirstOrDefaultAsync(g => g.Username == username && g.StoreId == store.Id && !g.IsDeleted);
+            if (guest == null) throw new Exception("Invalid username.");
 
-            var user = new IdentityUser { UserName = username, Email = $"{username}@guest.com" };
-            var result = await _userManager.CreateAsync(user, password);
-            if (!result.Succeeded) return false;
+            var hasher = new PasswordHasher<Guest>();
+            var result = hasher.VerifyHashedPassword(null, guest.Password, password);
+            if (result != PasswordVerificationResult.Success) throw new Exception("Invalid password.");
 
-            await _userManager.AddToRoleAsync(user, "Guest");
-            await _signInManager.SignInAsync(user, isPersistent: false);
-            return true;
+            if (!string.IsNullOrEmpty(guest.CurrentSessionId))
+            {
+                await _hubContext.Clients.Client(guest.CurrentSessionId)
+                    .SendAsync("ForceLogout", "This device has been logged out due to a new login.");
+            }
+
+            var sessionId = Guid.NewGuid().ToString();
+            guest.CurrentSessionId = sessionId;
+            await _context.SaveChangesAsync();
+
+            return sessionId;
         }
 
         public async Task<Customer> CreateCustomerAsync(string phoneNumber, int branchId)
@@ -231,20 +265,32 @@ namespace System.Infrastructure.Services
         public async Task<List<UserDto>> GetAllMainOwnersAsync()
         {
             var owners = await _userManager.GetUsersInRoleAsync("Owner");
-            return owners.Select(o => new UserDto
+            var userDtos = new List<UserDto>();
+            foreach (var owner in owners)
             {
-                Id = o.Id,
-                Email = o.Email
-            }).ToList();
+                userDtos.Add(new UserDto
+                {
+                    Id = owner.Id,
+                    Email = owner.Email
+                });
+            }
+            return userDtos;
         }
 
         public async Task<UserDto> CreateMainOwnerAsync(string email, string password, int storeId)
         {
+            var store = await _context.Stores.FindAsync(storeId);
+            if (store == null || store.IsDeleted) throw new Exception("Store not found.");
+
+            var existingUser = await _userManager.FindByEmailAsync(email);
+            if (existingUser != null) throw new Exception("User with this email already exists.");
+
             var user = new IdentityUser { UserName = email, Email = email };
             var result = await _userManager.CreateAsync(user, password);
             if (!result.Succeeded) throw new Exception("Failed to create owner: " + string.Join(", ", result.Errors.Select(e => e.Description)));
 
             await _userManager.AddToRoleAsync(user, "Owner");
+
             var userStore = new UserStore
             {
                 UserId = user.Id,
@@ -260,18 +306,30 @@ namespace System.Infrastructure.Services
         {
             var user = await _userManager.FindByIdAsync(id);
             if (user == null) throw new Exception("Owner not found.");
+
             user.Email = email;
             user.UserName = email;
-            await _userManager.UpdateAsync(user);
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded) throw new Exception("Failed to update owner: " + string.Join(", ", result.Errors.Select(e => e.Description)));
+
             return new UserDto { Id = user.Id, Email = user.Email };
         }
 
         public async Task<bool> DeleteMainOwnerAsync(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return false;
+            if (user == null) throw new Exception("Owner not found.");
+
+            var userStore = await _context.UserStores.FirstOrDefaultAsync(us => us.UserId == id);
+            if (userStore != null)
+            {
+                _context.UserStores.Remove(userStore);
+            }
+
             var result = await _userManager.DeleteAsync(user);
-            return result.Succeeded;
+            if (!result.Succeeded) throw new Exception("Failed to delete owner: " + string.Join(", ", result.Errors.Select(e => e.Description)));
+
+            return true;
         }
 
         public async Task<bool> AdminLoginAsync(string email, string password)

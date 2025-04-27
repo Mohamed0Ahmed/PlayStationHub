@@ -10,5 +10,6 @@ namespace System.Domain.Entities
         public int RoomId { get; set; }
         public Room Room { get; set; }
         public Store Store { get; set; }
+        public string? CurrentSessionId { get; set; }
     }
 }

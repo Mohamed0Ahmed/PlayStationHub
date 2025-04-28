@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Application.Interfaces;
+using System.Domain.Entities;
 
 namespace MvcProject.Controllers
 {
@@ -20,11 +21,33 @@ namespace MvcProject.Controllers
             return View(stores);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetDeletedStores()
+        public IActionResult ManageStore(int storeId)
         {
-            var stores = await _adminService.GetDeletedStoresAsync();
-            return Json(stores);
+            ViewBag.StoreId = storeId;
+            return View();
+        }
+
+        public async Task<IActionResult> LinkOwnerToStore()
+        {
+            ViewBag.Stores = await _adminService.GetAllStoresAsync();
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> LinkOwnerToStore(string email, int storeId)
+        {
+            try
+            {
+                await _adminService.LinkOwnerToStoreAsync(email, storeId);
+                TempData["Success"] = "Owner linked to store successfully.";
+                return RedirectToAction("LinkOwnerToStore");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                ViewBag.Stores = await _adminService.GetAllStoresAsync();
+                return View();
+            }
         }
 
         [HttpPost]
@@ -46,7 +69,7 @@ namespace MvcProject.Controllers
         {
             try
             {
-                var store = await _adminService.UpdateStoreAsync(id, storeName, address);
+                await _adminService.UpdateStoreAsync(id, storeName, address);
                 return Json(new { success = true });
             }
             catch (Exception ex)
@@ -60,8 +83,8 @@ namespace MvcProject.Controllers
         {
             try
             {
-                var success = await _adminService.DeleteStoreAsync(id);
-                return Json(new { success });
+                await _adminService.DeleteStoreAsync(id);
+                return Json(new { success = true });
             }
             catch (Exception ex)
             {
@@ -74,9 +97,9 @@ namespace MvcProject.Controllers
         {
             try
             {
-                var success = await _adminService.RestoreStoreAsync(id);
+                await _adminService.RestoreStoreAsync(id);
                 var store = await _adminService.GetStoreByIdAsync(id);
-                return Json(new { success, storeName = store.Name, storeAddress = store.Address });
+                return Json(new { success = true, storeName = store.Name, storeAddress = store.Address });
             }
             catch (Exception ex)
             {
@@ -85,9 +108,23 @@ namespace MvcProject.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> GetDeletedStores()
+        {
+            var stores = await _adminService.GetDeletedStoresAsync();
+            return Json(stores);
+        }
+
+        [HttpGet]
         public async Task<IActionResult> GetBranches(int storeId)
         {
             var branches = await _adminService.GetBranchesByStoreIdAsync(storeId);
+            return Json(branches.Select(b => new { id = b.Id, branchName = b.BranchName }));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetDeletedBranches(int storeId)
+        {
+            var branches = await _adminService.GetDeletedBranchesAsync(storeId);
             return Json(branches);
         }
 
@@ -110,7 +147,7 @@ namespace MvcProject.Controllers
         {
             try
             {
-                var branch = await _adminService.UpdateBranchAsync(id, branchName);
+                await _adminService.UpdateBranchAsync(id, branchName);
                 return Json(new { success = true });
             }
             catch (Exception ex)
@@ -124,8 +161,22 @@ namespace MvcProject.Controllers
         {
             try
             {
-                var success = await _adminService.DeleteBranchAsync(id);
-                return Json(new { success });
+                await _adminService.DeleteBranchAsync(id);
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RestoreBranch(int id)
+        {
+            try
+            {
+                await _adminService.RestoreBranchAsync(id);
+                return Json(new { success = true });
             }
             catch (Exception ex)
             {
@@ -137,6 +188,25 @@ namespace MvcProject.Controllers
         public async Task<IActionResult> GetRooms(int branchId)
         {
             var rooms = await _adminService.GetRoomsByBranchIdAsync(branchId);
+            var roomDtos = new List<object>();
+            foreach (var room in rooms)
+            {
+                var hasGuest = await _adminService.HasGuestAsync(room.Id);
+                roomDtos.Add(new
+                {
+                    id = room.Id,
+                    roomName = room.RoomName,
+                    storeId = room.Branch.StoreId,
+                    hasGuest
+                });
+            }
+            return Json(roomDtos);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetDeletedRooms(int branchId)
+        {
+            var rooms = await _adminService.GetDeletedRoomsAsync(branchId);
             return Json(rooms);
         }
 
@@ -159,7 +229,7 @@ namespace MvcProject.Controllers
         {
             try
             {
-                var room = await _adminService.UpdateRoomAsync(id, roomName);
+                await _adminService.UpdateRoomAsync(id, roomName);
                 return Json(new { success = true });
             }
             catch (Exception ex)
@@ -173,8 +243,22 @@ namespace MvcProject.Controllers
         {
             try
             {
-                var success = await _adminService.DeleteRoomAsync(id);
-                return Json(new { success });
+                await _adminService.DeleteRoomAsync(id);
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RestoreRoom(int id)
+        {
+            try
+            {
+                await _adminService.RestoreRoomAsync(id);
+                return Json(new { success = true });
             }
             catch (Exception ex)
             {
@@ -186,6 +270,13 @@ namespace MvcProject.Controllers
         public async Task<IActionResult> GetGuests(int roomId)
         {
             var guests = await _adminService.GetGuestsByRoomIdAsync(roomId);
+            return Json(guests.Select(g => new { id = g.Id, username = g.Username }));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetDeletedGuests(int branchId)
+        {
+            var guests = await _adminService.GetDeletedGuestsAsync(branchId);
             return Json(guests);
         }
 
@@ -208,8 +299,22 @@ namespace MvcProject.Controllers
         {
             try
             {
-                var success = await _adminService.DeleteGuestAsync(id);
-                return Json(new { success });
+                await _adminService.DeleteGuestAsync(id);
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RestoreGuest(string id)
+        {
+            try
+            {
+                await _adminService.RestoreGuestAsync(id);
+                return Json(new { success = true });
             }
             catch (Exception ex)
             {
@@ -221,6 +326,13 @@ namespace MvcProject.Controllers
         public async Task<IActionResult> GetOwners()
         {
             var owners = await _adminService.GetAllMainOwnersAsync();
+            return Json(owners);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetDeletedOwners()
+        {
+            var owners = await _adminService.GetDeletedOwnersAsync();
             return Json(owners);
         }
 
@@ -243,7 +355,7 @@ namespace MvcProject.Controllers
         {
             try
             {
-                var owner = await _adminService.UpdateMainOwnerAsync(id, email);
+                await _adminService.UpdateMainOwnerAsync(id, email);
                 return Json(new { success = true });
             }
             catch (Exception ex)
@@ -257,8 +369,24 @@ namespace MvcProject.Controllers
         {
             try
             {
-                var success = await _adminService.DeleteMainOwnerAsync(id);
-                return Json(new { success });
+                await _adminService.DeleteMainOwnerAsync(id);
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RestoreOwner(string id)
+        {
+            try
+            {
+                await _adminService.RestoreOwnerAsync(id);
+                var owner = await _adminService.GetAllMainOwnersAsync();
+                var restoredOwner = owner.FirstOrDefault(o => o.Id == id);
+                return Json(new { success = true, email = restoredOwner?.Email });
             }
             catch (Exception ex)
             {

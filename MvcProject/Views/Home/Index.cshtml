@@ -1,8 +1,74 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Guest Login - PlayStation Cafe";
 }
 
-<div class="text-center">
-    <h1 class="display-4 text-yellow-500">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<h2 class="text-center mb-4">Guest Login (iPad)</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <form id="guestLoginForm">
+            <div class="mb-3">
+                <label for="guestUsername" class="form-label">Username</label>
+                <input type="text" class="form-control" id="guestUsername" name="username" required />
+            </div>
+            <div class="mb-3">
+                <label for="guestPassword" class="form-label">Password</label>
+                <input type="password" class="form-control" id="guestPassword" name="password" required />
+            </div>
+            <div class="mb-3">
+                <label for="storeName" class="form-label">Store Name</label>
+                <input type="text" class="form-control" id="storeName" name="storeName" required />
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Guest Login</button>
+        </form>
+    </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/notificationHub")
+                .build();
+
+            connection.on("ReceiveForceLogout", (message) => {
+                alert(message);
+                window.location.href = "@Url.Action("Index", "Home")";
+            });
+
+            connection.start().catch(err => console.error(err.toString()));
+
+            // Guest Login Form Submission
+            $('#guestLoginForm').on('submit', function (e) {
+                e.preventDefault();
+                const username = $('#guestUsername').val();
+                const password = $('#guestPassword').val();
+                const storeName = $('#storeName').val();
+
+                $.ajax({
+                    url: '/Account/Login',
+                    method: 'POST',
+                    data: { username, password, storeName },
+                    success: function (response) {
+                        if (response.success) {
+                            window.location.href = response.redirectUrl;
+                        } else {
+                            alert('Guest login failed: ' + response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        alert('An error occurred: ' + error);
+                    }
+                });
+            });
+        });
+    </script>
+}

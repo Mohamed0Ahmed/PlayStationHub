@@ -7,5 +7,6 @@ namespace System.Domain.Entities
         public string RoomName { get; set; } = string.Empty;
         public int BranchId { get; set; }
         public List<Guest> Guests { get; set; } = [];
+        public Branch Branch { get; set; } 
     }
 }

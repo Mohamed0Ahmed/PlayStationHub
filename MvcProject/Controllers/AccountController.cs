@@ -21,7 +21,7 @@ namespace MvcProject.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login(string email = null, string password = null, string role = null, string username = null, string storeName = null)
+        public async Task<IActionResult> Login(string email = null, string password = null, string username = null, string storeName = null)
         {
             try
             {
@@ -35,31 +35,19 @@ namespace MvcProject.Controllers
                     return Json(new { success = true, redirectUrl = Url.Action("CustomerLogin") });
                 }
 
-                // Admin/Owner login
-                if (string.IsNullOrEmpty(role) || role != "Admin" && role != "Owner")
+                // Admin/Owner/Staff login
+                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
                 {
-                    return Json(new { success = false, message = "Invalid role." });
+                    return Json(new { success = false, message = "Email and password are required." });
                 }
 
-                bool IsloginSuccess = false;
-                if (role == "Admin")
+                var (isSuccess, redirectUrl) = await _adminService.UserLoginAsync(email, password);
+                if (isSuccess)
                 {
-                    IsloginSuccess = await _adminService.AdminLoginAsync(email, password);
-                    if (IsloginSuccess)
-                    {
-                        return Json(new { success = true, redirectUrl = Url.Action("Index", "Admin") });
-                    }
-                }
-                else if (role == "Owner")
-                {
-                    IsloginSuccess = await _adminService.OwnerLoginAsync(email, password);
-                    if (IsloginSuccess)
-                    {
-                        return Json(new { success = true, redirectUrl = Url.Action("Index", "Owner") });
-                    }
+                    return Json(new { success = true, redirectUrl });
                 }
 
-                return Json(new { success = false, message = "Invalid email, password, or role." });
+                return Json(new { success = false, message = "Invalid email or password." });
             }
             catch (Exception ex)
             {
@@ -73,7 +61,7 @@ namespace MvcProject.Controllers
             var sessionId = HttpContext.Session.GetString("GuestSessionId");
             if (string.IsNullOrEmpty(sessionId))
             {
-                return RedirectToAction("Login");
+                return RedirectToAction("Index", "Home");
             }
             return View();
         }
